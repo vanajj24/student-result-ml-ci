@@ -1,83 +1,123 @@
 import json
 import joblib
-import numpy as np
+import pandas as pd
 
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 
-np.random.seed(42)
+DATASET_FILE = "student_dataset_10000_rows.csv"
 
-# Generate synthetic student data
-n = 300
+FEATURES = [
+    "study_hours",
+    "attendance",
+    "assignments_completed",
+    "previous_score"
+]
 
-attendance = np.random.randint(50, 101, n)
-internal_marks = np.random.randint(30, 101, n)
-assignment_marks = np.random.randint(30, 101, n)
-previous_score = np.random.randint(30, 101, n)
+TARGET = "placement_status"
 
-# Create target variable
-result = (
-    (attendance >= 75)
-    & (internal_marks >= 40)
-    & (assignment_marks >= 40)
-    & (previous_score >= 40)
-).astype(int)
 
-X = np.column_stack(
-    (
-        attendance,
-        internal_marks,
-        assignment_marks,
-        previous_score,
+def train_model():
+
+    print("Loading dataset...")
+
+    data = pd.read_csv(DATASET_FILE)
+
+    print("Dataset loaded successfully.")
+    print("Number of records:", len(data))
+    print("Columns:", list(data.columns))
+
+    # Check for missing values
+    if data[FEATURES + [TARGET]].isnull().sum().sum() > 0:
+        raise ValueError("Dataset contains missing values.")
+
+    # Convert target to binary values
+    # Not Placed = 0
+    # Placed = 1
+    data[TARGET] = data[TARGET].map({
+        "Not Placed": 0,
+        "Placed": 1
+    })
+
+    if data[TARGET].isnull().any():
+        raise ValueError("Unexpected target value found.")
+
+    X = data[FEATURES]
+    y = data[TARGET]
+
+    print("Features used:")
+    print(FEATURES)
+
+    print("\nTarget distribution:")
+    print(y.value_counts())
+
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.20,
+        random_state=42,
+        stratify=y
     )
-)
 
-y = result
+    print("\nTraining records:", len(X_train))
+    print("Testing records:", len(X_test))
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y,
-)
+    # ML Pipeline
+    model = Pipeline([
+        ("scaler", StandardScaler()),
+        (
+            "classifier",
+            LogisticRegression(
+                max_iter=1000,
+                random_state=42
+            )
+        )
+    ])
 
-# Train Logistic Regression model
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train, y_train)
+    print("\nTraining Logistic Regression model...")
 
-# Make predictions
-y_pred = model.predict(X_test)
+    model.fit(X_train, y_train)
 
-# Calculate accuracy
-accuracy = accuracy_score(y_test, y_pred)
+    # Predictions
+    predictions = model.predict(X_test)
 
-# Generate confusion matrix
-cm = confusion_matrix(y_test, y_pred)
+    # Evaluation
+    accuracy = accuracy_score(y_test, predictions)
+    matrix = confusion_matrix(y_test, predictions)
 
-print("Model trained successfully")
-print("Training samples:", len(X_train))
-print("Testing samples:", len(X_test))
-print("Accuracy:", accuracy)
-print("Confusion Matrix:")
-print(cm)
+    print("\nModel Evaluation")
+    print("----------------")
+    print("Accuracy:", round(accuracy, 4))
 
-# Save model
-joblib.dump(model, "student_result_model.pkl")
+    print("\nConfusion Matrix:")
+    print(matrix)
 
-# Save metrics
-metrics = {
-    "accuracy": float(accuracy),
-    "confusion_matrix": cm.tolist(),
-    "training_samples": int(len(X_train)),
-    "testing_samples": int(len(X_test)),
-}
+    # Save trained model
+    joblib.dump(
+        model,
+        "student_result_model.pkl"
+    )
 
-with open("metrics.json", "w") as f:
-    json.dump(metrics, f, indent=4)
+    print("\nModel saved as student_result_model.pkl")
 
-print("Model saved as student_result_model.pkl")
-print("Metrics saved as metrics.json")
+    # Save metrics
+    metrics = {
+        "accuracy": float(accuracy),
+        "training_records": int(len(X_train)),
+        "testing_records": int(len(X_test)),
+        "confusion_matrix": matrix.tolist()
+    }
+
+    with open("metrics.json", "w") as file:
+        json.dump(metrics, file, indent=4)
+
+    print("Metrics saved as metrics.json")
+
+
+if __name__ == "__main__":
+    train_model()
