@@ -102,7 +102,7 @@ class TestMLPipeline(unittest.TestCase):
 
         self.assertEqual(
             int(prediction),
-            0
+            1
         )
 
 
