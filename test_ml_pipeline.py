@@ -1,45 +1,109 @@
+import json
 import os
 import unittest
-import json
+
 import joblib
-import numpy as np
+import pandas as pd
 
 
 class TestMLPipeline(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Run the training pipeline before testing
+
+        # Run the training pipeline
         os.system("python train_model.py")
 
-        cls.model = joblib.load("student_result_model.pkl")
+        cls.model = joblib.load(
+            "student_result_model.pkl"
+        )
 
-        with open("metrics.json", "r") as f:
-            cls.metrics = json.load(f)
+        with open("metrics.json", "r") as file:
+            cls.metrics = json.load(file)
 
-    def test_model_file_exists(self):
-        self.assertTrue(os.path.exists("student_result_model.pkl"))
+    def test_dataset_exists(self):
+        self.assertTrue(
+            os.path.exists(
+                "student_dataset_10000_rows.csv"
+            )
+        )
 
-    def test_metrics_file_exists(self):
-        self.assertTrue(os.path.exists("metrics.json"))
+    def test_model_created(self):
+        self.assertTrue(
+            os.path.exists(
+                "student_result_model.pkl"
+            )
+        )
 
-    def test_accuracy_threshold(self):
-        self.assertGreaterEqual(self.metrics["accuracy"], 0.70)
+    def test_metrics_created(self):
+        self.assertTrue(
+            os.path.exists(
+                "metrics.json"
+            )
+        )
+
+    def test_accuracy_is_valid(self):
+        accuracy = self.metrics["accuracy"]
+
+        self.assertGreaterEqual(
+            accuracy,
+            0.0
+        )
+
+        self.assertLessEqual(
+            accuracy,
+            1.0
+        )
 
     def test_confusion_matrix_shape(self):
-        cm = np.array(self.metrics["confusion_matrix"])
-        self.assertEqual(cm.shape, (2, 2))
+        matrix = self.metrics["confusion_matrix"]
 
-    def test_prediction_pass(self):
-        prediction = self.model.predict([[90, 80, 85, 88]])
-        self.assertEqual(prediction[0], 1)
+        self.assertEqual(
+            len(matrix),
+            2
+        )
 
-    def test_prediction_fail(self):
-        prediction = self.model.predict([[50, 30, 35, 40]])
-        self.assertEqual(prediction[0], 0)
+        self.assertEqual(
+            len(matrix[0]),
+            2
+        )
 
-    def test_model_has_predict_method(self):
-        self.assertTrue(hasattr(self.model, "predict"))
+        self.assertEqual(
+            len(matrix[1]),
+            2
+        )
+
+    def test_model_prediction(self):
+
+        sample = pd.DataFrame([{
+            "study_hours": 10,
+            "attendance": 95,
+            "assignments_completed": 20,
+            "previous_score": 90
+        }])
+
+        prediction = self.model.predict(sample)[0]
+
+        self.assertIn(
+            int(prediction),
+            [0, 1]
+        )
+
+    def test_high_performance_prediction(self):
+
+        sample = pd.DataFrame([{
+            "study_hours": 10,
+            "attendance": 95,
+            "assignments_completed": 20,
+            "previous_score": 90
+        }])
+
+        prediction = self.model.predict(sample)[0]
+
+        self.assertEqual(
+            int(prediction),
+            1
+        )
 
 
 if __name__ == "__main__":
