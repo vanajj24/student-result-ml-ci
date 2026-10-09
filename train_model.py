@@ -1,3 +1,4 @@
+```python
 import json
 import joblib
 import pandas as pd
@@ -22,14 +23,16 @@ TARGET = "placement_status"
 
 
 def train_model():
-
     print("Loading dataset...")
 
     data = pd.read_csv(DATASET_FILE)
 
     print("Dataset loaded successfully.")
+
+    # Save demonstration dataset for GitHub Actions artifacts
     data.to_csv("student_results.csv", index=False)
     print("Dataset saved as student_results.csv")
+
     print("Number of records:", len(data))
     print("Columns:", list(data.columns))
 
@@ -38,8 +41,7 @@ def train_model():
         raise ValueError("Dataset contains missing values.")
 
     # Convert target to binary values
-    # Not Placed = 0
-    # Placed = 1
+    # Not Placed = 0, Placed = 1
     data[TARGET] = data[TARGET].map({
         "Not Placed": 0,
         "Placed": 1
@@ -51,7 +53,7 @@ def train_model():
     X = data[FEATURES]
     y = data[TARGET]
 
-    print("Features used:")
+    print("\nFeatures used:")
     print(FEATURES)
 
     print("\nTarget distribution:")
@@ -69,7 +71,7 @@ def train_model():
     print("\nTraining records:", len(X_train))
     print("Testing records:", len(X_test))
 
-    # ML Pipeline
+    # Machine Learning pipeline
     model = Pipeline([
         ("scaler", StandardScaler()),
         (
@@ -82,7 +84,6 @@ def train_model():
     ])
 
     print("\nTraining Logistic Regression model...")
-
     model.fit(X_train, y_train)
 
     # Predictions
@@ -95,19 +96,14 @@ def train_model():
     print("\nModel Evaluation")
     print("----------------")
     print("Accuracy:", round(accuracy, 4))
-
     print("\nConfusion Matrix:")
     print(matrix)
 
     # Save trained model
-    joblib.dump(
-        model,
-        "student_result_model.pkl"
-    )
-
+    joblib.dump(model, "student_result_model.pkl")
     print("\nModel saved as student_result_model.pkl")
 
-    # Save metrics
+    # Save evaluation metrics
     metrics = {
         "accuracy": float(accuracy),
         "training_records": int(len(X_train)),
@@ -119,7 +115,9 @@ def train_model():
         json.dump(metrics, file, indent=4)
 
     print("Metrics saved as metrics.json")
+    print("\nAll ML artifacts generated successfully.")
 
 
 if __name__ == "__main__":
     train_model()
+```
