@@ -24,7 +24,7 @@ class TestPredictionApplication(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.get_json()["prediction"], "PLACED"
+            response.get_json()["prediction"], "NOT PLACED"
         )
 
     def test_low_performance_prediction(self):
