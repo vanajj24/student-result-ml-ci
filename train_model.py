@@ -28,6 +28,8 @@ def train_model():
     data = pd.read_csv(DATASET_FILE)
 
     print("Dataset loaded successfully.")
+        data.to_csv("student_results.csv", index=False)
+    print("Dataset saved as student_results.csv")
     print("Number of records:", len(data))
     print("Columns:", list(data.columns))
 
