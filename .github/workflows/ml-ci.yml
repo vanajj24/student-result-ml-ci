@@ -1,4 +1,3 @@
-
 name: Student Result ML CI-CD
 
 on:
@@ -62,6 +61,7 @@ jobs:
               echo "Application is ready."
               exit 0
             fi
+
             echo "Waiting for application... attempt $i"
             sleep 2
           done
@@ -119,29 +119,30 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # Practical 9: Publish the tested image to GHCR
+      # Publish only on pushes to the main branch.
       - name: Prepare GHCR image name
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           IMAGE_ID="ghcr.io/${{ github.repository_owner }}/student-result-prediction"
           IMAGE_ID=$(echo "$IMAGE_ID" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_ID=$IMAGE_ID" >> "$GITHUB_ENV"
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
-            -u "${{ github.actor }}" \
-            --password-stdin
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag tested image
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           docker tag student-result-ml:${{ github.sha }} "$IMAGE_ID:latest"
           docker tag student-result-ml:${{ github.sha }} "$IMAGE_ID:sha-${{ github.sha }}"
 
       - name: Push tested image to GHCR
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           docker push "$IMAGE_ID:latest"
           docker push "$IMAGE_ID:sha-${{ github.sha }}"
